@@ -97,10 +97,10 @@ void loop(){
 //and k curvature in 1/m representing 1/(radius of curvature)
 void setDesiredVel(float vel, float k){
     //TODO convert the velocity and k curvature to new values for desiredVelBL and desiredVelBR
-    desiredVelBL = (vel - k*b*vel)/r;
-    desiredVelFL = desiredVelBL;
-    desiredVelBR = 2*vel/r - desiredVelBL;
-    desiredVelFR = desiredVelBR;
+    desiredVelBL = 0;
+    desiredVelFL = 0;
+    desiredVelBR = 0;
+    desiredVelFR = 0;
 }
 
 //makes robot follow a trajectory
@@ -113,15 +113,15 @@ void getSetPointTrajectory(){
     //based on odemetry conditions
     if (pathDistance <= 1.0){
         //STRAIGHT LINE FORWARD
-        vel = 0.2;
+        vel = 0;
         k = 0;
     } else if (pathDistance > 1 && pathDistance < (1+0.25*PI)){
         //TURN IN SEMICIRCLE
-        vel = 0.2;
-        k = 1/0.25;
+        vel = 0;
+        k = 0;
     } else if (pathDistance > (1+ 0.25*PI) && pathDistance < (2 + 0.25*PI)){
         //STRAIGHT LINE BACK
-        vel = 0.2;
+        vel = 0;
         k = 0;
     } else {
         //STOP
@@ -134,17 +134,17 @@ void getSetPointTrajectory(){
 //updates the robot's path distance variable based on the latest change in angle
 void updateRobotPose(float dPhiL, float dPhiR){
     //TODO change in angle
-    float dtheta = r/(2*b)*(dPhiR-dPhiL);
+    float dtheta = 0;
     //TODO update theta value
-    theta += dtheta;
+    theta += 0;
     //TODO use the equations from the handout to calculate the change in x and y
-    float dx = r/2 * (cos(theta)*dPhiR + cos(theta)*dPhiL);
-    float dy = r/2 * (sin(theta)*dPhiR + sin(theta)*dPhiL);
+    float dx = 0;
+    float dy = 0;
     //TODO update x and y positions
-    x += dx;
-    y += dy;
+    x += 0;
+    y += 0;
     //TODO update the pathDistance
-    pathDistance += sqrt(dx*dx + dy*dy);
+    pathDistance += 0;
     //Serial.printf("x: %.2f y: %.2f\n", x, y);
 }
 
