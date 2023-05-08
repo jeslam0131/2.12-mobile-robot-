@@ -3,10 +3,23 @@
 #include "drive.h"
 #include "wireless.h"
 #include "PID.h"
+
+//IMU Libraries
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BNO055.h>
+#include <utility/imumaths.h>
+Adafruit_BNO055 bno = Adafruit_BNO055(55);
+
+float xrotIMU=0;
+
 //wheel radius in meters
 #define r 0.06
 //distance from back wheel to center in meters
 #define b 0.2
+
+
+
 
 //holds the odometry data to be sent to the microcontroller
 odometry_message odom_data;
@@ -45,9 +58,31 @@ void setup(){
     encoderSetup();
     driveSetup();
     wirelessSetup();
+    //IMU SETUP
+    Serial.begin(115200);
+  Serial.println("Orientation Sensor Test"); Serial.println("");
+  
+  /* Initialise the sensor */
+  if(!bno.begin())
+  {
+    /* There was a problem detecting the BNO055 ... check your connections */
+    Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
+    while(1);
+  }
+  
+  delay(1000);
+    
+  bno.setExtCrystalUse(true);
+  //IMU SETUP
+
 }
 
 void loop(){
+    //IMU LOOP
+sensors_event_t event; 
+  bno.getEvent(&event);
+  xrotIMU=event.orientation.x;
+//IMU Loop
     if (micros() - prevLoopTimeMicros > loopDelayMicros){
         prevLoopTimeMicros = micros();
         //get new encoder readings and update the velocity
@@ -97,10 +132,10 @@ void loop(){
 //and k curvature in 1/m representing 1/(radius of curvature)
 void setDesiredVel(float vel, float k){
     //TODO convert the velocity and k curvature to new values for desiredVelBL and desiredVelBR
-    desiredVelBL = 0;
-    desiredVelFL = 0;
-    desiredVelBR = 0;
-    desiredVelFR = 0;
+    desiredVelBL = vel*(1.0-b*k)/r;
+    desiredVelFL = vel*(1.0-b*k)/r;
+    desiredVelBR = vel*(1.0+b*k)/r;
+    desiredVelFR = vel*(1.0+b*k)/r;
 }
 
 //makes robot follow a trajectory
@@ -111,22 +146,33 @@ void getSetPointTrajectory(){
     float vel = 0 , k = 0;
     //TODO Add trajectory planning by changing the value of vel and k
     //based on odemetry conditions
-    if (pathDistance <= 1.0){
+    if (pathDistance <= 20){
         //STRAIGHT LINE FORWARD
-        vel = 0;
-        k = 0;
-    } else if (pathDistance > 1 && pathDistance < (1+0.25*PI)){
-        //TURN IN SEMICIRCLE
-        vel = 0;
-        k = 0;
-    } else if (pathDistance > (1+ 0.25*PI) && pathDistance < (2 + 0.25*PI)){
-        //STRAIGHT LINE BACK
-        vel = 0;
-        k = 0;
+        
+        if (xrotIMU > 1 && xrotIMU < 45){
+            vel=0.2;
+            k=4;
+            Serial.print("we're here  ");
+            Serial.print(vel);
+            Serial.println(k);
+        } 
+        else if (xrotIMU <358 && xrotIMU >300){
+            vel=0.2;
+            k=-4;
+            Serial.println("yolo");
+
+        }
+        else {
+            vel=0.2;
+            k=0;
+        }
+        
+    
     } else {
         //STOP
         vel = 0;
         k = 0;
+        
     }
     setDesiredVel(vel, k);
 }
@@ -134,17 +180,17 @@ void getSetPointTrajectory(){
 //updates the robot's path distance variable based on the latest change in angle
 void updateRobotPose(float dPhiL, float dPhiR){
     //TODO change in angle
-    float dtheta = 0;
+    float dtheta = r/(2.0*b)*(dPhiR-dPhiL);
     //TODO update theta value
-    theta += 0;
+    theta += dtheta;
     //TODO use the equations from the handout to calculate the change in x and y
-    float dx = 0;
-    float dy = 0;
+    float dx = r/2*(dPhiR*cos(dtheta)+dPhiL*cos(dtheta));
+    float dy = r/2*(dPhiR*sin(dtheta)+dPhiL*sin(dtheta));
     //TODO update x and y positions
-    x += 0;
-    y += 0;
+    x += dx;
+    y += dy;
     //TODO update the pathDistance
-    pathDistance += 0;
+    pathDistance += sqrt(dx*dx+dy*dy);
     //Serial.printf("x: %.2f y: %.2f\n", x, y);
 }
 
@@ -161,5 +207,5 @@ void updateOdometry(){
 //prints current odometry to be read into MATLAB
 void printOdometry(){
     //convert the time to seconds
-    Serial.printf("%.2f\t%.4f\t%.4f\t%.4f\t%.4f\n", odom_data.millis/1000.0, odom_data.x, odom_data.y, odom_data.theta, odom_data.pathDistance);
+    Serial.printf("%.2f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\n", odom_data.millis/1000.0, odom_data.x, odom_data.y, odom_data.theta, odom_data.pathDistance, xrotIMU);
 }
