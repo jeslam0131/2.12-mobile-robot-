@@ -60,21 +60,23 @@ void setup(){
     wirelessSetup();
     //IMU SETUP
     Serial.begin(115200);
-  Serial.println("Orientation Sensor Test"); Serial.println("");
-  
-  /* Initialise the sensor */
-  if(!bno.begin())
-  {
-    /* There was a problem detecting the BNO055 ... check your connections */
-    Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
-    while(1);
-  }
-  
-  delay(1000);
+    Serial.println("Orientation Sensor Test"); Serial.println("");
     
-  bno.setExtCrystalUse(true);
-  //IMU SETUP
+    /* Initialise the sensor */
+    
+    if (bno.begin()){
+    }
 
+    else if(!bno.begin())
+    {
+        /* There was a problem detecting the BNO055 ... check your connections */
+        Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
+        while(1);
+    }
+    
+    delay(1000); 
+    bno.setExtCrystalUse(true);
+    //IMU SETUP
 }
 
 void loop(){
@@ -147,24 +149,34 @@ void getSetPointTrajectory(){
     //TODO Add trajectory planning by changing the value of vel and k
     //based on odemetry conditions
     if (pathDistance <= 20){
-        //STRAIGHT LINE FORWARD
         
-        if (xrotIMU > 1 && xrotIMU < 45){
+        //STRAIGHT LINE FORWARD
+        if (pathDistance <= 1){
+            vel = 0.2;
+            k = 0;
+        }
+        
+        //left turn #1
+        else if (pathDistance <= 1.5) { 
             vel=0.2;
             k=4;
-            Serial.print("we're here  ");
-            Serial.print(vel);
-            Serial.println(k);
-        } 
-        else if (xrotIMU <358 && xrotIMU >300){
-            vel=0.2;
-            k=-4;
-            Serial.println("yolo");
-
         }
-        else {
-            vel=0.2;
-            k=0;
+
+        else if (pathDistance <= 20 && pathDistance > 1.5){
+            vel = 0.8;
+            Serial.println("Velocity is 0.8");
+
+            if (xrotIMU > 275){
+                k = 2;
+                Serial.println("Turning left");
+            }
+            else if (xrotIMU < 265){
+                k = -4;
+                Serial.println("Turning right");
+            }
+            else {
+                k = 0;
+            }
         }
         
     
